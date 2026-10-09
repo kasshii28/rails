@@ -207,4 +207,38 @@ module ActiveRecord
       end
     end
   end
+
+  class EstablishConnectionClobberTest < ActiveRecord::TestCase
+    self.use_transactional_tests = false
+
+    class MemoryBase < ActiveRecord::Base
+      self.abstract_class = true
+    end
+
+    teardown do
+      MemoryBase.remove_connection
+    end
+
+    if current_adapter?(:SQLite3Adapter)
+      MEMORY_CONFIG = { adapter: "sqlite3", database: ":memory:" }.freeze
+
+      test "establish_connection reuses the pool for an equal config" do
+        pool = MemoryBase.establish_connection(MEMORY_CONFIG.dup)
+        pool.lease_connection.create_table(:clobber_posts)
+
+        assert_same pool, MemoryBase.establish_connection(MEMORY_CONFIG.dup)
+        assert_includes MemoryBase.lease_connection.tables, "clobber_posts"
+      end
+
+      test "establish_connection with clobber: true replaces the pool and starts an empty in-memory database" do
+        pool = MemoryBase.establish_connection(MEMORY_CONFIG.dup)
+        pool.lease_connection.create_table(:clobber_posts)
+
+        new_pool = MemoryBase.establish_connection(MEMORY_CONFIG.dup, clobber: true)
+
+        assert_not_same pool, new_pool
+        assert_empty MemoryBase.lease_connection.tables
+      end
+    end
+  end
 end

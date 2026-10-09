@@ -1,3 +1,19 @@
+*   Add a `clobber:` option to `ActiveRecord::Base.establish_connection`.
+
+    `establish_connection` reuses the existing pool when called again with an
+    equal configuration. For databases whose contents live in the connection,
+    such as SQLite `:memory:`, that keeps the previous database. Pass
+    `clobber: true` to disconnect the existing pool and start from a new one:
+
+    ```ruby
+    ActiveRecord::Base.establish_connection(
+      { adapter: "sqlite3", database: ":memory:" },
+      clobber: true
+    )
+    ```
+
+    *Your Name*
+
 *   Fix `where` with a `Range` of value objects on a single-mapping `composed_of`
     attribute.
 

@@ -47,10 +47,21 @@ module ActiveRecord
     #
     # The exceptions AdapterNotSpecified, AdapterNotFound, and +ArgumentError+
     # may be returned on an error.
-    def establish_connection(config_or_env = nil)
+    #
+    # If the model already has a pool for an equal configuration, that pool is
+    # reused. Pass <tt>clobber: true</tt> to always disconnect the existing pool and
+    # establish a new one. This matters for databases whose contents live in the
+    # connection, such as SQLite <tt>:memory:</tt>, where a new pool means a new, empty
+    # database:
+    #
+    #   ActiveRecord::Base.establish_connection(
+    #     { adapter: "sqlite3", database: ":memory:" },
+    #     clobber: true
+    #   )
+    def establish_connection(config_or_env = nil, clobber: false)
       config_or_env ||= DEFAULT_ENV.call.to_sym
       db_config = resolve_config_for_connection(config_or_env)
-      connection_handler.establish_connection(db_config, owner_name: self, role: current_role, shard: current_shard)
+      connection_handler.establish_connection(db_config, owner_name: self, role: current_role, shard: current_shard, clobber: clobber)
     end
 
     # Connects a model to the databases specified. The +database+ keyword
